@@ -66,6 +66,16 @@ int getTileInDirection(enum Direction direction, int tilepos[2], int board[5][5]
 
 }
 
+int checkForChurch(int xoffset, int yoffset, int board[5][5]) {
+    if (!((xoffset < 0) || (xoffset > 4) || (yoffset < 0) || (yoffset > 4)) && (board[xoffset][yoffset] == 3)) {
+        return 2;
+    }
+    else {
+        return 0;
+    }
+    
+}
+
 int scorePort(int portpos[2], int board[5][5], int visited[24][2], int* visitedmax, int *sumpoints) {
     int isTileVisited = 0;
     for (int visitcheck = 0; visitcheck < *visitedmax; visitcheck++) {
@@ -86,24 +96,32 @@ int scorePort(int portpos[2], int board[5][5], int visited[24][2], int* visitedm
         
 
         if (getTileInDirection(UP, portpos, board) == 1) {
-            int newportpos[2] = {portpos[0], portpos[1] - 1};
-            scorePort(newportpos, board, visited, visitedmax, sumpoints);
+            portpos[1]--;
             printf("attempting to score up now.\n");
+            scorePort(portpos, board, visited, visitedmax, sumpoints);
+            portpos[1]++;
+            
         }
         if (getTileInDirection(DOWN, portpos, board) == 1) {
-            int newportpos[2] = {portpos[0], portpos[1] + 1};
-            scorePort(newportpos, board, visited, visitedmax, sumpoints);
+            portpos[1]++;
             printf("attempting to score down now.\n");
+            scorePort(portpos, board, visited, visitedmax, sumpoints);
+            portpos[1]--;
+            
         }
         if (getTileInDirection(LEFT, portpos, board) == 1) {
-            int newportpos[2] = {portpos[0] - 1, portpos[1]};
-            scorePort(newportpos, board, visited, visitedmax, sumpoints);
+            portpos[0]--;
             printf("attempting to score left now.\n");
+            scorePort(portpos, board, visited, visitedmax, sumpoints);
+            portpos[0]++;
+            
         }
         if (getTileInDirection(RIGHT, portpos, board) == 1) {
-            int newportpos[2] = {portpos[0] + 1, portpos[1]};
-            scorePort(newportpos, board, visited, visitedmax, sumpoints);
+            portpos[0]++;
             printf("attempting to score right now.\n");
+            scorePort(portpos, board, visited, visitedmax, sumpoints);
+            portpos[0]--;
+            
         }
 
     }
@@ -143,68 +161,27 @@ int scoreTile(int tilepos[2], int board[5][5], int cornboardval) {
         
             int visitedwater[24][2] = {{0, 0}};
             int visitedmax = 0;
-
-            scorePort(tilepos, board, visitedwater, &visitedmax, &tilescore);
+            int portpos[2] = {tilepos[0], tilepos[1]};
+            scorePort(portpos, board, visitedwater, &visitedmax, &tilescore);
             tilescore--; //remove the initial point that was added for the tile itself, since we only want to score the water connected to it.
             break;
             
         case 3:
-            tilescore = 8;
-            int checkpos[2] = {tilepos[0], tilepos[1]};
-            if (tilepos[1] < 4) { //UP CHECKING
-                checkpos[1]++;
-                if (getTileInDirection(UP, checkpos, board) == 3) {
-                    tilescore-=2;
-                }
-                checkpos[1] = tilepos[1];
-                checkpos[0]++;
-                if (getTileInDirection(RIGHT, checkpos, board) == 3) {
-                    tilescore-=2;
-                }
-                checkpos[0] -=2;
-                if (getTileInDirection(LEFT, checkpos, board) == 3) {
-                    tilescore-=2;
-                }
-                if (board[tilepos[0]][tilepos[1] + 1] == 3) {
-                    tilescore-=2;
-                }
-            }
-            if (tilepos[1] > 0) { //DOWN CHECKING
-                checkpos[1]--;
-                if (getTileInDirection(DOWN, checkpos, board) == 3) {
-                    tilescore-=2;
-                }
-                checkpos[1] = tilepos[1];
-                checkpos[0]++;
-                if (getTileInDirection(RIGHT, checkpos, board) == 3) {
-                    tilescore-=2;
-                }
-                checkpos[0] -=2;
-                if (getTileInDirection(LEFT, checkpos, board) == 3) {
-                    tilescore-=2;
-                }
-                if (board[tilepos[0]][tilepos[1] - 1] == 3) {
-                    tilescore-=2;
-                }
-            }
-            if (tilepos[0] < 4) { //RIGHT CHECKING
-                if (board[tilepos[0] + 1][tilepos[1]] == 3) {
-                    tilescore-=2;
-                }
-                checkpos[0]++;
-                if (getTileInDirection(RIGHT, checkpos, board) == 3) {
-                    tilescore-=2;
-                }
-            }
-            if (tilepos[0] > 0) { //LEFT CHECKING
-                if (board[tilepos[0] - 1][tilepos[1]] == 3) {
-                    tilescore-=2;
-                }
-                checkpos[0]--;
-                if (getTileInDirection(LEFT, checkpos, board) == 3) {
-                    tilescore-=2;
-                }
-            }
+            tilescore = 8;  
+            //as a possible strat, we could stop from checking the rest of the churches if already less than 1. 
+            //However overhead from checking points = to 1 might be too much for these rare scenarios.
+            tilescore -= checkForChurch(tilepos[0] - 1, tilepos[1], board);
+            tilescore -= checkForChurch(tilepos[0] - 2, tilepos[1], board);
+            tilescore -= checkForChurch(tilepos[0] - 1, tilepos[1] - 1, board);
+            tilescore -= checkForChurch(tilepos[0], tilepos[1] - 2, board);
+            tilescore -= checkForChurch(tilepos[0] + 1, tilepos[1] - 1, board);
+            tilescore -= checkForChurch(tilepos[0] + 2, tilepos[1], board);
+            tilescore -= checkForChurch(tilepos[0] + 1, tilepos[1] + 1, board);
+            tilescore -= checkForChurch(tilepos[0], tilepos[1] + 2, board);
+            tilescore -= checkForChurch(tilepos[0] - 1, tilepos[1] + 1, board);
+            tilescore -= checkForChurch(tilepos[0], tilepos[1] - 1, board);
+            tilescore -= checkForChurch(tilepos[0], tilepos[1] + 1, board);
+            tilescore -= checkForChurch(tilepos[0] + 1, tilepos[1], board);
 
             if (tilescore < 1) {
                 tilescore = 1;
@@ -290,3 +267,120 @@ int main() {
 
     return 0;
 }
+/*
+
+5(2) 0(0) 3(6) 0(0) 3(4) 
+0(0) 2(6) 1(2) 0(0) 0(0) 
+2(5) 1(3) 1(4) 0(0) 3(6) 
+0(0) 1(3) 1(3) 0(0) 0(0) 
+0(0) 0(0) 0(0) 3(8) 5(8) 
+
+unvisited water at 1, 1                                     -starts at 1, 1 pretending the port is a water
+visited is previously 0 long, and sumpoints is now 0        
+visited is now 1 long, and sumpoints is now 1               -complete initializing the two lists
+attempting to score down now.                               -begin checking others
+unvisited water at 1, 2                                     -down, water is found
+visited is previously 1 long, and sumpoints is now 1        -sumpoints + visited is one higher than normal, which is normal 
+visited is now 2 long, and sumpoints is now 2               
+attempting to score down now.                               -scoring tile down of down, finds water
+unvisited water at 1, 3
+visited is previously 2 long, and sumpoints is now 2        
+visited is now 3 long, and sumpoints is now 3               -adds to list
+attempting to score up now.
+water has already been visitedattempting to score right now.-found, finds water right
+unvisited water at 2, 3
+visited is previously 3 long, and sumpoints is now 3
+visited is now 4 long, and sumpoints is now 4               -everything standard
+attempting to score up now.
+unvisited water at 2, 2
+visited is previously 4 long, and sumpoints is now 4
+visited is now 5 long, and sumpoints is now 5               -logs water at 2, 2 (one higher)
+attempting to score up now.
+unvisited water at 2, 1
+visited is previously 5 long, and sumpoints is now 5        -finds the final water scoring up
+visited is now 6 long, and sumpoints is now 6
+attempting to score down now.
+water has already been visitedattempting to score down now.
+water has already been visitedattempting to score left now.
+water has already been visitedattempting to score left now.
+water has already been visitedattempting to score right now.
+water has already been visitedattempting to score right now.-finishing up the older ones?
+unvisited water at 2, 1                                     -it seems this water is found by the initial portcheck. I think this would be the reason why these break.
+visited is previously 6 long, and sumpoints is now 6        -However, it's also important to note the port found 5 points for a square of 1s with only 1 attachment. Its listed below
+visited is now 7 long, and sumpoints is now 7
+attempting to score down now.                               
+water has already been visitedunvisited water at 0, 2       -THIS IS THE START OF THE SCOND PORT SCORING. This one isn't broken, if i had to guess, since it borders only 1 port.
+visited is previously 0 long, and sumpoints is now 0
+visited is now 1 long, and sumpoints is now 1
+attempting to score right now.
+unvisited water at 1, 2
+visited is previously 1 long, and sumpoints is now 1
+visited is now 2 long, and sumpoints is now 2
+attempting to score down now.
+unvisited water at 1, 3
+visited is previously 2 long, and sumpoints is now 2
+visited is now 3 long, and sumpoints is now 3
+attempting to score up now.
+water has already been visitedattempting to score right now.
+unvisited water at 2, 3
+visited is previously 3 long, and sumpoints is now 3
+visited is now 4 long, and sumpoints is now 4
+attempting to score up now.
+unvisited water at 2, 2
+visited is previously 4 long, and sumpoints is now 4
+visited is now 5 long, and sumpoints is now 5
+attempting to score up now.
+unvisited water at 2, 1
+visited is previously 5 long, and sumpoints is now 5
+visited is now 6 long, and sumpoints is now 6
+attempting to score down now.
+water has already been visitedattempting to score down now.
+water has already been visitedattempting to score left now.
+water has already been visitedattempting to score left now.
+water has already been visitedattempting to score right now.
+water has already been visited
+
+
+
+----------------------------------------------------------------------------------------------
+
+
+
+unvisited water at 1, 1
+visited is previously 0 long, and sumpoints is now 0
+visited is now 1 long, and sumpoints is now 1
+attempting to score down now.
+unvisited water at 1, 2
+visited is previously 1 long, and sumpoints is now 1
+visited is now 2 long, and sumpoints is now 2
+attempting to score down now.
+unvisited water at 1, 3
+visited is previously 2 long, and sumpoints is now 2
+visited is now 3 long, and sumpoints is now 3
+attempting to score up now.
+water has already been visitedattempting to score right now.
+unvisited water at 2, 3
+visited is previously 3 long, and sumpoints is now 3
+visited is now 4 long, and sumpoints is now 4
+attempting to score up now.
+unvisited water at 2, 2
+visited is previously 4 long, and sumpoints is now 4
+visited is now 5 long, and sumpoints is now 5
+attempting to score down now.
+water has already been visitedattempting to score left now.
+water has already been visitedattempting to score left now.
+water has already been visitedattempting to score right now.
+unvisited water at 2, 2
+visited is previously 5 long, and sumpoints is now 5
+visited is now 6 long, and sumpoints is now 6
+attempting to score down now.
+water has already been visitedattempting to score left now.
+water has already been visited
+5(2) 0(0) 3(6) 0(0) 3(4) 
+0(0) 2(5) 0(0) 0(0) 0(0) 
+0(0) 1(3) 1(3) 0(0) 3(6) 
+0(0) 1(3) 1(3) 0(0) 0(0) 
+0(0) 0(0) 0(0) 3(8) 5(8) 
+
+
+*/
